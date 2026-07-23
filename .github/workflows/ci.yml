@@ -69,6 +69,8 @@ jobs:
       - name: Set up Chrome
         uses: browser-actions/setup-chrome@v1
         id: setup-chrome
+        with:
+          chrome-version: stable
       - name: Install Selenium + webdriver-manager
         run: pip install selenium webdriver-manager
       - name: Run UI/integration tests over http
