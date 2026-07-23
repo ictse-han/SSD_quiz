@@ -1,8 +1,11 @@
-import time
 import os
+import time
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 BASE_URL = "http://127.0.0.1:5000"
 
@@ -12,10 +15,16 @@ def get_driver():
     options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+
     chrome_bin = os.environ.get("CHROME_BIN")
     if chrome_bin:
         options.binary_location = chrome_bin
-    return webdriver.Chrome(options=options)
+
+    # webdriver-manager downloads a chromedriver build that matches
+    # whatever Chrome is actually installed, checked at run time --
+    # avoids version-mismatch errors between Chrome and chromedriver.
+    service = Service(ChromeDriverManager().install())
+    return webdriver.Chrome(service=service, options=options)
 
 
 def fill_and_submit(driver, url, username, password):

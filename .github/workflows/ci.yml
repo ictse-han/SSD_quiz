@@ -66,11 +66,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install Selenium
-        run: pip install selenium
       - name: Set up Chrome
         uses: browser-actions/setup-chrome@v1
         id: setup-chrome
+      - name: Install Selenium + webdriver-manager
+        run: pip install selenium webdriver-manager
       - name: Run UI/integration tests over http
         env:
           CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
