@@ -1,0 +1,80 @@
+name: CI - Security and Integration
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  eslint-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install ESLint + security plugin
+        run: npm install eslint eslint-plugin-security --no-save
+      - name: Run ESLint (security rules)
+        run: npx eslint web/static --config eslint.config.mjs
+
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install app dependencies
+        run: pip install -r web/requirements.txt
+      - name: pip-audit
+        run: |
+          pip install pip-audit
+          pip-audit -r web/requirements.txt
+      - name: OWASP Dependency-Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: 'secure-login-app'
+          path: 'web'
+          format: 'HTML'
+          out: 'reports'
+      - name: Upload Dependency-Check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: reports
+
+  ui-integration-test:
+    runs-on: ubuntu-latest
+    needs: [eslint-security, dependency-check]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and start db + web over http
+        run: docker compose up -d --build db web
+      - name: Wait for the app to respond
+        run: |
+          for i in $(seq 1 40); do
+            curl -sf http://127.0.0.1:5000 > /dev/null && break
+            sleep 3
+          done
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Selenium
+        run: pip install selenium
+      - name: Install Chrome + chromedriver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+          sudo ln -sf /usr/bin/chromedriver /usr/local/bin/chromedriver
+      - name: Run UI/integration tests over http
+        run: python test_selenium.py
+      - name: Tear down
+        if: always()
+        run: docker compose down
