@@ -1,24 +1,22 @@
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import psycopg2
 from flask import Flask, request, render_template, jsonify
+from flask_wtf import CSRFProtect
 
 app = Flask(__name__)
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-key-change-me")
+csrf = CSRFProtect(app)
 
-DB_CONFIG = dict(
-    host=os.environ.get("DB_HOST", "db"),
-    dbname=os.environ.get("DB_NAME", "quizdb"),
-    user=os.environ.get("DB_USER", "quizuser"),
-    password=os.environ.get("DB_PASSWORD", "quizpass"),
-)
+DB_CONFIG = {
+    "host": os.environ.get("DB_HOST", "db"),
+    "dbname": os.environ.get("DB_NAME", "quizdb"),
+    "user": os.environ.get("DB_USER", "quizuser"),
+    "password": os.environ.get("DB_PASSWORD", "quizpass"),
+}
 
-# OWASP Top 10 2024 Proactive Controls C7 (Secure Digital Identities),
-# Level 1 password requirements (NIST 800-63B style):
-#   - length between 8 and 64 characters
-#   - no forced composition rules
-#   - reject anything on a known common/breached password list
 MIN_LENGTH = 8
 MAX_LENGTH = 64
 
@@ -52,12 +50,12 @@ def log_new_user(username):
     with get_conn() as conn, conn.cursor() as cur:
         cur.execute(
             'INSERT INTO "2301483" (username, created_at) VALUES (%s, %s)',
-            (username, datetime.utcnow()),
+            (username, datetime.now(timezone.utc)),
         )
         conn.commit()
 
 
-# Backend password check (Q4-c), also called by the frontend via fetch() (Q4-b)
+@csrf.exempt
 @app.route("/api/check-password", methods=["POST"])
 def check_password():
     data = request.get_json(silent=True) or {}

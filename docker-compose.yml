@@ -21,6 +21,7 @@ services:
       - DB_NAME=quizdb
       - DB_USER=quizuser
       - DB_PASSWORD=quizpass
+      - SECRET_KEY=a6410c6929433d076396557e44af8168f5212fd341bf4db7616fad6915cd7a62
     ports:
       - "5000:5000"
     depends_on:
