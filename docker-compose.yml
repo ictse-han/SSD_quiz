@@ -1,0 +1,73 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: db
+    environment:
+      - POSTGRES_DB=quizdb
+      - POSTGRES_USER=quizuser
+      - POSTGRES_PASSWORD=quizpass
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - db_data:/var/lib/postgresql/data
+
+  web:
+    build:
+      context: ./web
+    container_name: web-server
+    volumes:
+      - ./web:/app
+    environment:
+      - DB_HOST=db
+      - DB_NAME=quizdb
+      - DB_USER=quizuser
+      - DB_PASSWORD=quizpass
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+
+  # HTTPS reverse proxy, self-signed cert generated at image build time
+  nginx:
+    build:
+      context: ./nginx
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - web
+
+  # Local git server -- Q3
+  gitea:
+    image: gitea/gitea:latest
+    container_name: gitea
+    environment:
+      - USER_UID=1000
+      - USER_GID=1000
+      - GITEA__server__ROOT_URL=http://localhost:3000/
+      - GITEA__security__INSTALL_LOCK=true
+    ports:
+      - "3000:3000"
+      - "2222:22"
+    volumes:
+      - gitea_data:/data
+
+  # Q8 -- admin / 2301483@sit.singaporetech.edu.sg, http://127.0.0.1:9000/
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    environment:
+      - SONAR_ES_BOOTSTRAP_CHECKS_DISABLE=true
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+
+volumes:
+  db_data:
+  gitea_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:

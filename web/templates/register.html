@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Account</title>
+  <script src="/static/validate.js" defer></script>
+</head>
+<body>
+  <h2>Create Account</h2>
+  <form action="/register" method="POST" data-validate-password>
+    <label for="username">Username:</label>
+    <input type="text" id="username" name="username" required>
+    <label for="password">Password:</label>
+    <input type="password" id="password" name="password" required>
+    <button type="submit">Create Account</button>
+  </form>
+  <p><a href="/">Back to login</a></p>
+</body>
+</html>
